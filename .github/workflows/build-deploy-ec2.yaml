@@ -18,7 +18,7 @@ jobs:
                 distribution: "adopt"
                 java-version: "11"
             
-            - name: build artifact with Maven
+            - name: build app artifact with Maven
               run: mvn clean package
             
             - name: upload maven artifact into GitHub Packages
