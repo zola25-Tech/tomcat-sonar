@@ -1,61 +1,64 @@
-name: building, scanning, and deploying java webapp on tomcat hosted on ec2
+name: Building, Scanning, and Deploying Java Webapp on Tomcat hosted on EC2
 
 on: 
-   push:
+  push:
     branches:
-        -main
+      - main
 
 jobs:
-    build_and_deploy_artifact :
-        runs-on: ubuntu-latest
-        steps:
-            - name: clone repository into Github Runner
-              uses: actions/checkout@v3
+  build_and_deploy_artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository into GitHub Runner
+        uses: actions/checkout@v3
               
-            - name: install and setup maven and java within Github runner 
-              uses: action/setup-java@v3
-              with:
-                distribution: "adopt"
-                java-version "11"
+      - name: Install and setup Maven and Java within GitHub runner
+        uses: actions/setup-java@v3
+        with:
+          distribution: "adopt"
+          java-version: "11"
 
-              - name: build app with apache maven
-             run: mvn clean package
+      - name: Build app with Apache Maven
+        run: mvn clean package
               
-              - name: upload maven artifact into Github packages
-            uses:actions/upload-artifact@v3
-                with:
-                    name: webapp
-                    path: target/* .war
-deploy_artifact:
-    runs-on: ububtu-latest
+      - name: Upload Maven artifact into GitHub packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: webapp
+          path: target/*.war
+
+  deploy_artifact:
+    runs-on: ubuntu-latest
     needs: build_and_deploy_artifact
     steps:
-        - name: clone repository into runner
-          uses: actions@checkout@v3
+      - name: Clone repository into runner
+        uses: actions/checkout@v3
 
-        - name: install and setup maven and java within Github runner
-          uses: actions/setup-java@v3
-          with:
-            distribution: "adopt"
-            java-version: "11" 
-        -   name: download the artifactwe uploaded into Github packages
-            uses: actions/downloads-artifact@v3
-            with:
-                name: webapp
-                path: ~/
+      - name: Install and setup Maven and Java within GitHub runner
+        uses: actions/setup-java@v3
+        with:
+          distribution: "adopt"
+          java-version: "11"
+          
+      - name: Download the artifact we uploaded into GitHub packages
+        uses: actions/download-artifact@v3
+        with:
+          name: webapp
+          path: ~/
                 
-        - name: run sonarqube scan aganist code
-          run: |
-            mvn sonar:sonar \
-             -Dsonar.projectKey=scan_code \
-             -Dsonar.host.url=http://3.142.249.58:9000 \
-              -Dsonar.login=a66446139572b9897a1d15452de2d826c9ff6046
+      - name: Run SonarQube scan against code
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=scan_code \
+            -Dsonar.host.url=http://3.142.249.58:9000 \
+            -Dsonar.login=a66446139572b9897a1d15452de2d826c9ff6046
 
-        - name: push into tomcat server (Ec2 instance)
-          run: |
+      - name: Push into Tomcat server (EC2 instance)
+        run: |
           echo "${{secrets.KEY_PAIR_FILE}}" > ~/key_pair.pem 
           chmod 400 ~/key_pair.pem
-          sudo scp -i ~/key_pair.pem -o strictHostkeycheckin=no ~/*.war ec2-user@ 18.227.161.52:/opt/tomcat9/webapps    
+          sudo scp -i ~/key_pair.pem -o StrictHostKeyChecking=no ~/*.war ec2-user@18.227.161.52:/opt/tomcat9/webapps
+   
               
                          
 
