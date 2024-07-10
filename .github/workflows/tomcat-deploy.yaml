@@ -1,0 +1,62 @@
+name: building, scanning, and deploying java webapp on tomcat hosted on ec2
+
+on: 
+   push:
+    branches:
+        -main
+
+jobs:
+    build_and_deploy_artifact :
+        runs-on: ubuntu-latest
+        steps:
+            - name: clone repository into Github Runner
+              uses: actions/checkout@v3
+              
+            - name: install and setup maven and java within Github runner 
+              uses: action/setup-java@v3
+              with:
+                distribution: "adopt"
+                java-version "11"
+
+              - name: build app with apache maven
+             run: mvn clean package
+              
+              - name: upload maven artifact into Github packages
+            uses:actions/upload-artifact@v3
+                with:
+                    name: webapp
+                    path: target/* .war
+deploy_artifact:
+    runs-on: ububtu-latest
+    needs: build_and_deploy_artifact
+    steps:
+        - name: clone repository into runner
+          uses: actions@checkout@v3
+
+        - name: install and setup maven and java within Github runner
+          uses: actions/setup-java@v3
+          with:
+            distribution: "adopt"
+            java-version: "11" 
+        -   name: download the artifactwe uploaded into Github packages
+            uses: actions/downloads-artifact@v3
+            with:
+                name: webapp
+                path: ~/
+                
+        - name: run sonarqube scan aganist code
+          run: |
+            mvn sonar:sonar \
+             -Dsonar.projectKey=scan_code \
+             -Dsonar.host.url=http://3.142.249.58:9000 \
+              -Dsonar.login=a66446139572b9897a1d15452de2d826c9ff6046
+
+        - name: push into tomcat server (Ec2 instance)
+          run: |
+          echo "${{secrets.KEY_PAIR_FILE}}" > ~/key_pair.pem 
+          chmod 400 ~/key_pair.pem
+          sudo scp -i ~/key_pair.pem -o strictHostkeycheckin=no ~/*.war ec2-user@ 18.227.161.52:/opt/tomcat9/webapps    
+              
+                         
+
+       
